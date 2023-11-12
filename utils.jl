@@ -1,6 +1,8 @@
 import Combinatorics
 
-function construct_A(nx::Int,ny::Int,Jx::Float64,Jy::Float64,Jz::Float64,xPBC::Bool=true,yPBC::Bool=true)
+function construct_A_honeycomb(nx::Int,ny::Int,Jx::Float64,Jy::Float64,Jz::Float64,xPBC::Bool=true,yPBC::Bool=true,xShift::Int=0,yShift::Int=0)
+    # xShift, yShift are the shifts of the lattice.
+
     Lx=2*nx
     Ly=2*ny
     # The lattice size is Lx \times Ly.
@@ -11,60 +13,194 @@ function construct_A(nx::Int,ny::Int,Jx::Float64,Jy::Float64,Jz::Float64,xPBC::B
 
     for x in 1:Lx
         for y in 1:Ly
-            if((x+y)%2==1)
+            if((x+(x-1)*yShift+y+(y-1)*xShift)%2==1)
                 # The site belongs to the odd sublattice. We should only iterate over even ones here.
                 continue
             end
 
-            m=x+(y-1)*Lx
-            
-            if(x>1)
+            m=x+(y-1)*Lx # Index of the current even vertex.
+
+            x_sign=1
+            y_sign=1
+            # The signs to take into account the boudary conditions.
+
+            x_neighbor=0
+            y_neighbor=0
+            # The coordinates of the neighboring vertex.
+
+
+
+            # The interaction with the left-side vertex. yShift needs to be considered.
+            if(x>1) 
                 # There is a site to the left.
-                n_left=x-1+(y-1)*Lx
-                A[m,n_left]=Jy
-                A[n_left,m]=-Jy # A is antisymmetric.
+                x_sign=1
+                x_neighbor=x-1
             else
-                n_left=Lx+(y-1)*Lx # There is a site to the left, but it is on the other side of the lattice.
-                if(xPBC)
-                    A[m,n_left]=Jy # Periodic boundary condition
-                    A[n_left,m]=-Jy # A is antisymmetric.
-                else
-                    A[m,n_left]=-Jy # Anti-periodic boundary condition
-                    A[n_left,m]=Jy # A is antisymmetric.
-                end
+                x_sign=2*xPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                x_neighbor=Lx # There is a site to the left, but it is on the other side of the lattice.
             end
 
-            if(x<Lx)
+            if(y-yShift>0) # The y coordinate of the left-side vertex should be y-yShift mod Ly.
+                y_sign=1
+                y_neighbor=y-yShift
+            else
+                y_sign=2*yPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                y_neighbor=y-yShift+Ly # There is a site to the left, but it is on the other side of the lattice.
+            end
+                
+            n_left=x_neighbor+(y_neighbor-1)*Lx
+            A[m,n_left]=Jy*x_sign*y_sign
+            A[n_left,m]=-Jy*x_sign*y_sign # A is antisymmetric.
+            
+
+            
+            # The interaction with the right-side vertex. yShift needs to be considered.
+            if(x<Lx) 
                 # There is a site to the right.
-                n_right=x+1+(y-1)*Lx
-                A[m,n_right]=Jx
-                A[n_right,m]=-Jx # A is antisymmetric.
+                x_sign=1
+                x_neighbor=x+1
             else
-                n_right=1+(y-1)*Lx # There is a site to the right, but it is on the other side of the lattice.
-                if(xPBC)
-                    A[m,n_right]=Jx # Periodic boundary condition
-                    A[n_right,m]=-Jx # A is antisymmetric.
-                else
-                    A[m,n_right]=-Jx # Anti-periodic boundary condition
-                    A[n_right,m]=Jx # A is antisymmetric.
-                end
+                x_sign=2*xPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                x_neighbor=1 # There is a site to the right, but it is on the other side of the lattice.
             end
 
-            if(y<Ly)
-                # There is a site below.
-                n_down=x+y*Lx
-                A[m,n_down]=Jz
-                A[n_down,m]=-Jz # A is antisymmetric.
+            if(y+yShift<=Ly) # The y coordinate of the right-side vertex should be y+yShift mod Ly.
+                y_sign=1
+                y_neighbor=y+yShift
             else
-                n_down=x # There is a site above, but it is on the other side of the lattice.
-                if(yPBC)
-                    A[m,n_down]=Jz # Periodic boundary condition
-                    A[n_down,m]=-Jz # A is antisymmetric.
-                else
-                    A[m,n_down]=-Jz # Anti-periodic boundary condition
-                    A[n_down,m]=Jz # A is antisymmetric.
-                end
+                y_sign=2*yPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                y_neighbor=y+yShift-Ly # There is a site to the left, but it is on the other side of the lattice.
             end
+                
+            n_left=x_neighbor+(y_neighbor-1)*Lx
+            A[m,n_left]=Jx*x_sign*y_sign
+            A[n_left,m]=-Jx*x_sign*y_sign # A is antisymmetric.
+            
+
+
+            # The interaction with the down-side vertex. xShift needs to be considered.
+
+            if(y<Ly) 
+                # There is a site on the downside.
+                y_sign=1
+                y_neighbor=y+1
+            else
+                y_sign=2*yPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                y_neighbor=1 # There is a site on the downside, but it is on the other side of the lattice.
+            end
+
+            if(x+xShift<=Lx) # The x coordinate of the down-side vertex should be x+xShift mod Lx.
+                x_sign=1
+                x_neighbor=x+xShift
+            else
+                x_sign=2*xPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                x_neighbor=x+xShift-Lx # There is a site to the left, but it is on the other side of the lattice.
+            end
+                
+            n_left=x_neighbor+(y_neighbor-1)*Lx
+            A[m,n_left]=Jz*x_sign*y_sign
+            A[n_left,m]=-Jz*x_sign*y_sign # A is antisymmetric.
+        end
+    end
+
+    return A
+end
+
+function construct_A_square(nx::Int,ny::Int,mu::Float64,t::Float64,delta::Float64,xPBC::Bool=true,yPBC::Bool=true,xShift::Int=0,yShift::Int=0)
+    # xShift, yShift are the shifts of the lattice.
+
+    #=
+    mu=-2.0
+    t=1.0
+    delta=1.0
+    =#
+
+    Lx=nx
+    Ly=ny
+
+    # The lattice size is Lx \times Ly.
+
+    N_majorana=2*Lx*Ly # The total number of majorana fermions. Note that there are two on each site.
+    
+    A=zeros(ComplexF64,N_majorana,N_majorana) # The A matrix encoding interactions.
+
+    for x in 1:Lx
+        for y in 1:Ly
+            
+            # Here we do not only iterate over even sites, but also odd sites. But we only process the interactions with the right-side vertex and the down-side vertex.
+
+            m=x+(y-1)*Lx # Index of the current vertex.
+
+
+            x_sign=1
+            y_sign=1
+            # The signs to take into account the boudary conditions.
+
+            x_neighbor=0
+            y_neighbor=0
+            # The coordinates of the neighboring vertex.
+
+
+            # Self-interaction term
+            A[2*m-1,2*m]=-mu/2
+            A[2*m,2*m-1]=mu/2
+
+
+
+           
+            # The interaction with the right-side vertex. yShift needs to be considered.
+            if(x<Lx) 
+                # There is a site to the right.
+                x_sign=1
+                x_neighbor=x+1
+            else
+                x_sign=2*xPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                x_neighbor=1 # There is a site to the right, but it is on the other side of the lattice.
+            end
+
+            if(y+yShift<=Ly) # The y coordinate of the right-side vertex should be y+yShift mod Ly.
+                y_sign=1
+                y_neighbor=y+yShift
+            else
+                y_sign=2*yPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                y_neighbor=y+yShift-Ly # There is a site to the left, but it is on the other side of the lattice.
+            end
+                
+            n_right=x_neighbor+(y_neighbor-1)*Lx
+            A[2*m-1,2*n_right]=x_sign*y_sign*(-t/2-delta/2)
+            A[2*n_right,2*m-1]=-x_sign*y_sign*(-t/2-delta/2) # A is antisymmetric.
+
+            A[2*m,2*n_right-1]=x_sign*y_sign*(t/2-delta/2)
+            A[2*n_right-1,2*m]=-x_sign*y_sign*(t/2-delta/2) # A is antisymmetric.
+            
+
+
+            # The interaction with the down-side vertex. xShift needs to be considered.
+
+            if(y<Ly) 
+                # There is a site on the downside.
+                y_sign=1
+                y_neighbor=y+1
+            else
+                y_sign=2*yPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                y_neighbor=1 # There is a site on the downside, but it is on the other side of the lattice.
+            end
+
+            if(x+xShift<=Lx) # The x coordinate of the down-side vertex should be x+xShift mod Lx.
+                x_sign=1
+                x_neighbor=x+xShift
+            else
+                x_sign=2*xPBC-1 # With PBC the sign is +1, while with APBC the sign is -1.
+                x_neighbor=x+xShift-Lx # There is a site to the left, but it is on the other side of the lattice.
+            end
+                
+            n_down=x_neighbor+(y_neighbor-1)*Lx
+            A[2*m-1,2*n_down]=x_sign*y_sign*(-t/2-im*delta/2)
+            A[2*n_down,2*m-1]=x_sign*y_sign*(t/2-im*delta/2) # A is anti-hermitian.
+
+            A[2*m,2*n_down-1]=x_sign*y_sign*(t/2-im*delta/2)
+            A[2*n_down-1,2*m]=x_sign*y_sign*(-t/2-im*delta/2) # A is anti-hermitian.
+
         end
     end
 
@@ -112,4 +248,37 @@ function Pfaffian(U::Matrix)
 
     res=res/(2^n*factorial(n))
     return -res
+end
+
+function plot_A(A::Matrix)
+    N=size(A,1) # The total number of sites.
+    Lx=Ly=Int64(sqrt(N)) # The length of the lattice in the x direction. The lattice is assumed to be square.
+    
+    x_arr=zeros(Float64,N)
+    y_arr=zeros(Float64,N)
+    # The coordinates of the sites.
+    
+    for x in 1:Lx
+        for y in 1:Ly
+            m=x+(y-1)*Lx
+            x_arr[m]=x
+            y_arr[m]=y
+        end
+    end
+    
+    # Plot the interactions.
+    for m in 1:N
+        for n in 1:N
+            if(A[m,n]!=0)
+                PyPlot.plot([x_arr[m],x_arr[n]],[y_arr[m],y_arr[n]],color="black")
+            end
+        end
+    end
+    
+    PyPlot.scatter(x_arr,y_arr,color="red")
+    
+    PyPlot.xlim(0,Lx+1)
+    PyPlot.ylim(0,Ly+1)
+    
+    PyPlot.show()
 end

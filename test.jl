@@ -2,11 +2,13 @@ include("utils.jl")
 using LinearAlgebra
 import Combinatorics
 import SkewLinearAlgebra
+import PyPlot
 
-m=rand(Float64,6,6)
-SkewLinearAlgebra.skewhermitian!(m)
+A=construct_A_square(3,3,-2.0,1.0,1.0,true,true,0,0)
+display(A[1:8,1:8])
 
-println(Pfaffian(m))
-println(SkewLinearAlgebra.pfaffian(m))
+# Use Pyplot to plot the interactions in the honeycomb lattice.
+# The input is the A matrix.
 
 
+# plot_A(A)
