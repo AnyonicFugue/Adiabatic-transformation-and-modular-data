@@ -1,16 +1,12 @@
 include("utils.jl")
 using LinearAlgebra
+import Combinatorics
+import SkewLinearAlgebra
+
+m=rand(Float64,6,6)
+SkewLinearAlgebra.skewhermitian!(m)
+
+println(Pfaffian(m))
+println(SkewLinearAlgebra.pfaffian(m))
 
 
-A=construct_A(10,10,1.0,1.1,1.2,true,true)
-# println(Hermitian(1im*A))
-# println(A)
-
-
-
-e2=eigen(Hermitian(1im*A))
-
-println("values")
-println(e2.values)
-println("vectors")
-# println(e2.vectors)
