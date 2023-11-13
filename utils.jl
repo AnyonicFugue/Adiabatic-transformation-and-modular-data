@@ -1,4 +1,7 @@
 import Combinatorics
+import LinearAlgebra
+import CurveFit
+import PyPlot
 
 function construct_A_honeycomb(nx::Int,ny::Int,Jx::Float64,Jy::Float64,Jz::Float64,xPBC::Bool=true,yPBC::Bool=true,xShift::Int=0,yShift::Int=0)
     # xShift, yShift are the shifts of the lattice.
@@ -207,7 +210,7 @@ function construct_A_square(nx::Int,ny::Int,mu::Float64,t::Float64,delta::Float6
     return A
 end
 
-function obtain_occupied_modes(Amat::Array{Float64,2})
+function obtain_occupied_modes(Amat::Matrix)
     # A is constructed in the above function. We should calculate the eigenvalues and eigenvectors of im*A, which is Hermitian.
     # Exactly half the eigenvalues are positive and half are negative.
 
@@ -249,6 +252,21 @@ function Pfaffian(U::Matrix)
     res=res/(2^n*factorial(n))
     return -res
 end
+
+
+function Fit_and_plot(phase_arr::Array{Float64},N_arr::Array{Int})
+    # Fit the phase_arr with respect to N_arr. The intercept is the desired phase.
+    # Use functions in CurveFit.jl to perform linear fit and those in PyPlot to plot the results.
+    a,k=CurveFit.linear_fit(N_arr,phase_arr)
+    println("intercept:",a)
+    println("slope:",k)
+
+    # Plot phase vs N
+    PyPlot.plot(N_arr,phase_arr,"o")
+    PyPlot.plot(N_arr,a*N_arr.+k)
+    PyPlot.show()
+end
+
 
 function plot_A(A::Matrix)
     N=size(A,1) # The total number of sites.
